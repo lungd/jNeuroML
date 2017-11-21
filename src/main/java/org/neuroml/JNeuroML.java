@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.List;
 import javax.xml.bind.JAXBException;
@@ -27,7 +28,6 @@ import org.neuroml.export.brian.BrianWriter;
 import org.neuroml.export.cellml.CellMLWriter;
 import org.neuroml.export.dnsim.DNSimWriter;
 import org.neuroml.export.exceptions.GenerationException;
-import org.neuroml.export.geppetto.GeppettoWriter;
 import org.neuroml.export.graph.GraphWriter;
 import org.neuroml.export.info.InfoWriter;
 import org.neuroml.export.nest.NestWriter;
@@ -37,6 +37,7 @@ import org.neuroml.export.pynn.PyNNWriter;
 import org.neuroml.export.sbml.SBMLWriter;
 import org.neuroml.export.svg.SVGWriter;
 import org.neuroml.export.utils.Format;
+import org.neuroml.export.utils.NeuroMLInclusionReader;
 import org.neuroml.export.utils.Utils;
 import org.neuroml.export.vertex.VertexWriter;
 import org.neuroml.export.xineml.XineMLWriter;
@@ -57,7 +58,7 @@ public class JNeuroML
 
     public static final String JNML_SCRIPT = "jnml";
 
-    public static final String JNML_VERSION = "0.8.0";
+    public static final String JNML_VERSION = "0.8.3";
 
     public static final String HELP_FLAG = "-help";
     public static final String HELP_FLAG_SHORT = "-h";
@@ -65,6 +66,9 @@ public class JNeuroML
 
     public static final String VERSION_FLAG = "-v";
     public static final String VERSION_FLAG_LONG = "-version";
+    
+    public static final String SEARCH_PATH_FLAG = "-I";
+    public static final String SEARCH_PATH_JLEMSLIKE_FLAG = "-cp";
 
     public static final String NO_GUI_FLAG = "-nogui";
 
@@ -107,6 +111,8 @@ public class JNeuroML
     
     public static final String NETPYNE_EXPORT_FLAG = "-netpyne";
     
+    public static final String NUMBER_PROCESSORS_FLAG = "-np";
+    
     public static final String VERTEX_EXPORT_FLAG = "-vertex";
 
     public static final String NINEML_EXPORT_FLAG = "-nineml";
@@ -114,7 +120,7 @@ public class JNeuroML
 
     public static final String NEST_EXPORT_FLAG = "-nest";
     
-    public static final String GEPPETTO_EXPORT_FLAG = "-geppetto";
+    //public static final String GEPPETTO_EXPORT_FLAG = "-geppetto";
 
     public static final String SBML_IMPORT_FLAG = "-sbml-import";
     public static final String SBML_IMPORT_UNITS_FLAG = "-sbml-import-units";
@@ -134,6 +140,9 @@ public class JNeuroML
             
             + "    " + JNML_SCRIPT + " LEMSFile.xml " + NO_RUN_FLAG + "\n"
             + "           Parse the LEMS file, but don't run the simulation\n\n" 
+            
+            + "    " + JNML_SCRIPT + " " + SEARCH_PATH_FLAG + " directory1:directory2:directoryN LEMSFile.xml\n"
+            + "           Execute the LEMS file, inclusing the : separated list of directories on the search path for includes\n\n" 
             
             + "    " + JNML_SCRIPT + " LEMSFile.xml " + GRAPH_FLAG + "\n"
             + "           Load LEMSFile.xml using jLEMS, and convert it to GraphViz format\n\n" 
@@ -209,16 +218,20 @@ public class JNeuroML
         System.out.println(usage);
     }
 
-    private static Lems loadLemsFile(File lemsFile) throws LEMSException
+    private static Lems loadLemsFile(File lemsFile) throws LEMSException, NeuroMLException
     {
+        return loadLemsFile(lemsFile, true);
+    }
 
+    private static Lems loadLemsFile(File lemsFile, boolean includeConnectionsFromHDF5) throws LEMSException, NeuroMLException
+    {
         if(!lemsFile.exists())
         {
             System.err.println("File does not exist: " + lemsFile.getAbsolutePath());
             showUsage();
             System.exit(1);
         }
-        return Utils.readLemsNeuroMLFile(lemsFile).getLems();
+        return Utils.readLemsNeuroMLFile(lemsFile,includeConnectionsFromHDF5).getLems();
     }
     
     private static String generateFormatFilename(File lemsFile, Format format, String extra)
@@ -254,6 +267,30 @@ public class JNeuroML
 
         try
         {
+            ArrayList<String> argsToUse = new ArrayList();
+            for (int i=0; i<args.length; i++)
+            {
+                if(args[i].equals(SEARCH_PATH_FLAG) || args[i].equals(SEARCH_PATH_JLEMSLIKE_FLAG))
+                {
+                    String search = args[i+1];
+                    for(String s: search.split(":"))
+                    {
+                        NeuroMLInclusionReader.addSearchPath((new File(s)).getAbsoluteFile());
+                    }
+                    i+=1;
+                }
+                else
+                {
+                    argsToUse.add(args[i]);
+                }
+            }
+            
+            args = new String[argsToUse.size()];
+            args = argsToUse.toArray(args);
+            
+            //System.out.println("args: "+args.length            );
+            //System.out.println("args: "+args[0]           );
+            
             if(args.length == 0)
             {
                 System.err.println("Error, no arguments to " + JNML_SCRIPT);
@@ -436,10 +473,11 @@ public class JNeuroML
             else if(args[1].equals(NETPYNE_EXPORT_FLAG))
             {
                 File lemsFile = (new File(args[0])).getAbsoluteFile();
-                Lems lems = loadLemsFile(lemsFile);
+                Lems lems = loadLemsFile(lemsFile, false);
                 boolean nogui = false;
                 boolean run = false;
                 File outputDir = lemsFile.getParentFile();
+                int np = 1;
                 
                 int i  = 2;
                 while (i<args.length) 
@@ -458,6 +496,11 @@ public class JNeuroML
                             System.exit(1);
                         }
                     }
+                    else if (args[i].equals(NUMBER_PROCESSORS_FLAG))
+                    {
+                        i = i+1;
+                        np = Integer.parseInt(args[i]);
+                    }
                     else 
                     {
                         System.out.println("Unrecognised argument: " + args[i]);
@@ -468,7 +511,7 @@ public class JNeuroML
                 
                 String mainFilename = generateFormatFilename(lemsFile, Format.NETPYNE, "_netpyne");
                 NetPyNEWriter npw = new NetPyNEWriter(lems, outputDir, mainFilename);
-                npw.generateAndRun(nogui, run);
+                npw.generateAndRun(nogui, run, np);
             }
                 // Two arguments
             else if(args.length == 2)
@@ -592,6 +635,9 @@ public class JNeuroML
                         System.out.println("Writing to: " + genFile.getAbsolutePath());
                     }
                 }
+                
+                /*
+                Needs to be updated!!
                 else if(args[1].equals(GEPPETTO_EXPORT_FLAG))
                 {
 
@@ -611,7 +657,7 @@ public class JNeuroML
                                 + "http://localhost:8080/org.geppetto.frontend/?sim=file://" + genFile + "\n");
                         }
                     }
-                }
+                }*/
                 else if(args[1].equals(SEDML_EXPORT_FLAG))
                 {
 
@@ -799,7 +845,7 @@ public class JNeuroML
                     File pngFile = new File(nmlFile.getParentFile(), pngFileName);
                     SVGWriter svgw = new SVGWriter(nmlDocument, nmlFile.getParentFile(), pngFileName);
                     
-                    svgw.convertToPng(pngFile, 1600, 1200);
+                    svgw.convertToPng(pngFile);
                     System.out.println("Writing to: " + pngFile.getAbsolutePath());
                     
                 }
