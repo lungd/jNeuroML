@@ -18,7 +18,7 @@ def main():
             if arg == "clean":
     	    	print "Cleaning repos"
     	    	mode = "clean"
-    	    elif arg == "0.1":
+    	    elif arg == "ow-0.1":
                 switch_to_branch = "ow-0.1"
     	    elif arg == "experimental":
                 switch_to_branch = "experimental"
