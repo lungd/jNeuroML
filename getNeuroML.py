@@ -50,11 +50,10 @@ def main():
     java_repos = jlems_repo + java_neuroml_repos
     lems_repos = jlems_repo + lems_spec_repos + pylems_repos
 
-    # Which repos use a development branch?
-    dev_branch_repos = neuroml2_spec_repo + neuroml_repos + jlems_repo
-
-
     all_repos = lems_repos  + neuroml_repos 
+
+    # Which repos use a development branch?
+    ow01_branch_repos = all_repos
     
 
     # Set the preferred method for cloning from GitHub
@@ -94,7 +93,7 @@ def main():
                 runMvnInstall = True
 
             if switch_to_branch:
-                if (repo in dev_branch_repos):
+                if (repo in ow01_branch_repos):
                     command = "git checkout %s" % (switch_to_branch)
                     print "Switching to branch: %s" % (switch_to_branch)
                     exit_on_fail = switch_to_branch is not "experimental"
@@ -180,3 +179,4 @@ def help_info():
 
 if __name__ == "__main__":
     main()
+
