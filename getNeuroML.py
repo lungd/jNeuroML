@@ -18,8 +18,8 @@ def main():
             if arg == "clean":
     	    	print "Cleaning repos"
     	    	mode = "clean"
-    	    elif arg == "development":
-                switch_to_branch = "development"
+    	    elif arg == "0.1":
+                switch_to_branch = "ow-0.1"
     	    elif arg == "experimental":
                 switch_to_branch = "experimental"
     	    elif arg == "master":
@@ -31,21 +31,21 @@ def main():
         help_info()
         exit()
 
-    neuroml2_spec_repo = ['NeuroML/NeuroML2']
-    libneuroml_repo = ['NeuralEnsemble/libNeuroML']
+    neuroml2_spec_repo = ['lungd/NeuroML2']
+    libneuroml_repo = ['lungd/libNeuroML']
 
-    java_neuroml_repos = ['NeuroML/org.neuroml.model.injectingplugin',
-                          'NeuroML/org.neuroml.model',
-                          'NeuroML/org.neuroml1.model',
-                          'NeuroML/org.neuroml.export',
-                          'NeuroML/org.neuroml.import',
-                          'NeuroML/jNeuroML']
+    java_neuroml_repos = ['lungd/org.neuroml.model.injectingplugin',
+                          'lungd/org.neuroml.model',
+                          'lungd/org.neuroml1.model',
+                          'lungd/org.neuroml.export',
+                          'lungd/org.neuroml.import',
+                          'lungd/jNeuroML']
 
     neuroml_repos = neuroml2_spec_repo + libneuroml_repo + java_neuroml_repos
 
-    jlems_repo = ['LEMS/jLEMS']
-    lems_spec_repos = ['LEMS/LEMS']
-    pylems_repos = ['LEMS/pylems']
+    jlems_repo = ['lungd/jLEMS']
+    lems_spec_repos = ['lungd/LEMS']
+    pylems_repos = ['lungd/pylems']
 
     java_repos = jlems_repo + java_neuroml_repos
     lems_repos = jlems_repo + lems_spec_repos + pylems_repos
@@ -174,8 +174,8 @@ def help_info():
 	"Run 'mvn clean' on all Java repos\n\n" \
 	"    python getNeuroML.py master\n       " \
 	"Switch all repos to master branch\n\n" \
-	"    python getNeuroML.py development\n       " \
-    	"Switch relevant repos to development branch\n\n"
+	"    python getNeuroML.py 0.1\n       " \
+    	"Switch relevant repos to v0.1 branch\n\n"
 
 
 if __name__ == "__main__":
